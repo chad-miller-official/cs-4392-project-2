@@ -1,0 +1,9 @@
+========================================================
+== LINUX INSTRUCTIONS (tested on Ubuntu 14.04 64-bit) ==
+========================================================
+
+To build:
+Run `make`.
+
+To run:
+Run `mono Game.exe -s [board size]`, where [board size] is in the range [5, 10].
