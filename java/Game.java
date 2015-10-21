@@ -1,3 +1,7 @@
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 /*
  * Nearly everything in this program is done with bytes
  * and plain arrays to save memory. This program is very
@@ -6,9 +10,9 @@
 public class Game
 {
 	public static byte size, numHoles;
-	public static volatile Board best = null;
-	public static volatile byte bestNumPegs = 0;
-	public static Thread[] threads;
+	public static Board best = null;
+	public static byte bestNumPegs = 0;
+	public static ExecutorService threadPool;
 	
 	public static void main(String[] args)
 	{
@@ -21,7 +25,7 @@ public class Game
 			// Get the board size, and use it to calculate the corresponding triangle number
 			size = Byte.parseByte(args[1]);
 			numHoles = (byte) ((size * (size + 1)) / 2);
-			threads = new Thread[numHoles];
+			threadPool = Executors.newFixedThreadPool(numHoles);
 		}
 		catch(NumberFormatException e)
 		{
@@ -30,34 +34,39 @@ public class Game
 		
 		// Test each starting position
 		for(byte i = 0; i < numHoles; i++)
+			threadPool.submit(new BoardSolver(i));
+		
+		// Execute all of them
+		threadPool.shutdown();
+		
+		try
 		{
-			threads[i] = new Thread(new BoardSolver(i));
-			threads[i].start();
+			// Wait up to 1 hour for completion
+			if(threadPool.awaitTermination(1, TimeUnit.HOURS))
+			{
+				// Print out the final solution
+				System.out.println((best.history[0].end + 1) + ", " + best.history.length);
+				
+				for(Board.Move m : best.history)
+					System.out.println((m.start + 1) + ", " + (m.end + 1));
+			}
 		}
-		
-		for(byte i = 0; i < numHoles; i++)
+		catch(InterruptedException e)
 		{
-			try
-			{
-				threads[i].join();
-			}
-			catch(InterruptedException e)
-			{
-				// Do nothing
-			}
+			// Do nothing
 		}
-		
-		// Print out the final solution
-		System.out.println((best.history[0].end + 1) + ", " + best.history.length);
-		
-		for(Board.Move m : best.history)
-			System.out.println((m.start + 1) + ", " + (m.end + 1));
 	}
 	
 	private static void printUsageAndExit()
 	{
 		System.err.println("Usage: java Game -p [board size]");
 		System.exit(-1);
+	}
+	
+	public static synchronized void updateBest(Board b)
+	{
+		best = b;
+		bestNumPegs = best.numPegs();
 	}
 	
 	private static class BoardSolver implements Runnable
@@ -95,10 +104,7 @@ public class Game
 			{
 				// If we have no moves, see if this is the best we've done so far
 				if(best == null || b.numPegs() > best.numPegs())
-				{
-					best = b;
-					bestNumPegs = best.numPegs();
-				}
+					updateBest(b);
 			}
 		}
 	}
