@@ -103,7 +103,6 @@ let boardAgent = MailboxProcessor<Board>.Start(fun inbox ->
         List.iter (fun (m : Move) -> printfn "%i, %i" (m.Start + 1) (m.End + 1)) b.History
     let rec inboxLoop (allBoards : Board list) = async {
         let! board = inbox.Receive()
-        printfn "allBoards.Length = %i" (allBoards.Length + 1)
         match allBoards.Length with
         | i when i < numHoles - 1 -> return! inboxLoop (board :: allBoards)
         | _ -> printStats (List.max (board :: allBoards)); canExit := true
