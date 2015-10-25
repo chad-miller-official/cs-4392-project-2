@@ -6,24 +6,19 @@ import (
     "strconv"
 )
 
-var Size int
-var NumHoles int
+var Size, NumHoles int
 var Neighbors [][]int
-
-func triangleNum(n int) int {
-    return ( n * ( n + 1 ) ) / 2
-}
 
 func main() {
 	args := os.Args[1:]
 	
 	if len(args) != 2 || args[0] != "-s" {
-	    fmt.Println("Usage: go run Game.go -s [board size]")
+	    fmt.Println("Usage: ./Game -s [board size]")
 	    os.Exit(-1)
     }
     
     Size, _ = strconv.Atoi(args[1])
-    NumHoles = triangleNum(Size)
+    NumHoles = TriangleNum(Size)
     Neighbors = make([][]int, Size)
     
     counter := 0
