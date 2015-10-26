@@ -8,19 +8,16 @@ import (
 
 var Size, NumHoles int
 var Neighbors [][]int
-
 var best Board
-var bestNumPegs int
 
 func solveBoard(b Board) {
-    if b.NumPegs() > bestNumPegs {
+    if b.NumPegs() > best.NumPegs() {
         if len(b.Moves) > 0 {
             for _, m := range b.Moves {
                 solveBoard(b.ExecuteMove(m))
             }
         } else {
-            best = b
-            bestNumPegs = best.NumPegs()
+            best = b.Clone()
         }
     }
 }
@@ -55,7 +52,6 @@ func main() {
     }
     
     best = ConstructBoard(startHoles, []Move{})
-    bestNumPegs = best.NumPegs()
     
     for i, _ := range startHoles {
         solveBoard(ConstructBoard([]int{i}, []Move{}))
@@ -66,14 +62,5 @@ func main() {
     for _, m := range best.History {
         fmt.Println((m.Start + 1), ",", (m.End + 1))
     }
-    
-    /*
-    fmt.Println("TESTING")
-    test := ConstructBoard([]int{0}, []Move{})
-    fmt.Println("Moves:", test.Moves)
-    
-    test2 := test.ExecuteMove(test.Moves[0])
-    fmt.Println("Moves:", test2.Moves)
-    */
 }
 

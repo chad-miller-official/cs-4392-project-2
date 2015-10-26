@@ -41,6 +41,10 @@ func ConstructMove(start, end int) Move {
     return retval
 }
 
+func (m Move) Clone() Move {
+    return Move{m.Start, m.End, m.Middle}
+}
+
 type Board struct {
     Holes []bool
     Moves, History []Move
@@ -121,7 +125,7 @@ func (b Board) NumPegs() int {
     sum := 0
     
     for _, h := range b.Holes {
-        if h {
+        if !h {
             sum++
         }
     }
@@ -154,5 +158,27 @@ func (b Board) ExecuteMove(m Move) Board {
     nextHistory = append(nextHistory, m)
     
     return ConstructBoard(nextHoles, nextHistory)
+}
+
+func (b Board) Clone() Board {
+    nextHoles := make([]bool, NumHoles)
+    
+    for i, _ := range b.Holes{
+        nextHoles[i] = b.Holes[i]
+    }
+    
+    nextMoves := make([]Move, len(b.Moves))
+    
+    for i, _ := range b.Moves {
+        nextMoves[i] = b.Moves[i].Clone()
+    }
+    
+    nextHistory := make([]Move, len(b.History))
+    
+    for i, _ := range b.History {
+        nextHistory[i] = b.History[i].Clone()
+    }
+    
+    return Board{nextHoles, nextMoves, nextHistory}
 }
 
