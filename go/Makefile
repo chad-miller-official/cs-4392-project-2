@@ -4,4 +4,4 @@ Game: Game.go Board.go
 	go build -o Game
 
 clean:
-	rm *.exe
+	rm Game
