@@ -27,6 +27,8 @@ public class Game
 			// Get the board size, and use it to calculate the corresponding triangle number
 			size = Byte.parseByte(args[1]);
 			numHoles = (byte) ((size * (size + 1)) / 2);
+			
+			// Create a thread pool, where each thread solves a given board
 			threadPool = Executors.newFixedThreadPool(numHoles);
 		}
 		catch(NumberFormatException e)
@@ -34,6 +36,7 @@ public class Game
 			printUsageAndExit();
 		}
 		
+		// List of board solvers for each thread
 		Collection<BoardSolver> solvers = new ArrayList<BoardSolver>(numHoles);
 		
 		// Test each starting position
@@ -42,14 +45,27 @@ public class Game
 		
 		try
 		{
+		    // A future corresponding to each thread/board solver
 			List<Future<Board>> results = threadPool.invokeAll(solvers);
+			
+			// Stop accepting threads, and force all threads to start
 			threadPool.shutdown();
 			Board best = null;
 			
+			/*
+			 * Get the result for each future. We're iterating over all of them
+			 * starting at index 0 rather than waiting for each one as they
+			 * return. This is because we need to wait for the last one before
+			 * we can continue anyway.
+			 */
 			for(Future<Board> f : results)
 			{
 				Board result = f.get();
 				
+				/*
+				 * If the board we get is better than our current
+				 * best, make our current best the one we just got
+				 */
 				if(best == null || result.numPegs() > best.numPegs())
 					best = result;
 			}

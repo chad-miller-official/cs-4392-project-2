@@ -1,8 +1,18 @@
 import java.util.concurrent.Callable;
 
+/*
+ * This class is basically an instance of a function
+ * that solves a board given a starting hole.
+ */
 public class BoardSolver implements Callable<Board>
 {
+    // first is the initial board we're starting with
 	private Board first, best;
+	
+	/*
+	 * bestNumPegs is at any given time the number of pegs that best has, so we
+	 * can skip boards that have more pegs than the best.
+	 */
 	private byte bestNumPegs;
 	
 	public BoardSolver(byte start)
@@ -14,6 +24,7 @@ public class BoardSolver implements Callable<Board>
 	@Override
 	public Board call()
 	{
+	    // Basically a wrapper for solve() that also returns the best board
 		solve(first);
 		return best;
 	}

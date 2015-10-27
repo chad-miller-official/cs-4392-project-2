@@ -46,9 +46,10 @@ type Board (empty : int list, ?history : Move list) =
     let holes = [ for i in 0 .. numHoles - 1 -> Seq.exists ((=) i) empty ]
     // Gets a list that contains all valid moves on a board
     let moves =
-        // Gets a list of all valid moves given a starting point
+        // Gets a list of all valid moves given a starting point (nested helper function)
         let getMovesHelper (holes : bool list) n =
             // Gets a valid move's endpoint given a starting point, using an index for the lookup index lists.
+            // (nested helper function inside nested helper function)
             let getMovesHelperHelper (holes : bool list) k n =
                 let (i, j) = getLookupIndices n
                 // This has the potential to throw an index-out-of-bounds exception, in which case there is no move
@@ -58,11 +59,13 @@ type Board (empty : int list, ?history : Move list) =
                     | _ -> -1   // Return -1 if there's no move
                 with
                 | _ -> -1
+            // Get only what we want from the helper-helper function
             [for m in 
                 (List.filter
                     (fun i -> i <> -1)  // Filter out all nonexistant moves
                     [for k in 0 .. 5 -> getMovesHelperHelper holes k n]) ->
                         Move(m, n) ]
+        // Get only what we want from the helper function
         List.fold
             (fun acc elem -> acc @ elem)
             []
@@ -87,12 +90,17 @@ type Board (empty : int list, ?history : Move list) =
         | :? Board as o -> (this.Holes = o.Holes)
         | _ -> false
     override this.GetHashCode() = hash (this.Holes, this.Moves, this.History)
+    (*
+     * Two boards are comparable by their number of pegs only - this is the only information
+     * we care about when we're deciding which board is 'greater than' or 'less than' another one.
+     *)
     interface IComparable with
         member this.CompareTo other =
             match other with
             | :? Board as o -> compare this.Pegs o.Pegs
             | _ -> invalidArg "other" "not a Board"
 
+// This variable prevents the main thread from prematurely exiting
 let canExit = ref false
 
 #nowarn "40"
@@ -101,6 +109,13 @@ let boardAgent = MailboxProcessor<Board>.Start(fun inbox ->
     let printStats (b : Board) =
         printfn "%i, %i" (b.History.[0].End + 1) b.History.Length
         List.iter (fun (m : Move) -> printfn "%i, %i" (m.Start + 1) (m.End + 1)) b.History
+    (*
+     * Mailbox loop. We wait for a final board from any thread. When we get one,
+     * we recursively call ourselves again, but with the new board added to the
+     * list we use to keep track of all the boards. Once we get the last one,
+     * we get the 'max' board, print its stats, and set the canExit variable to
+     * true, letting the program finally quit.
+     *)
     let rec inboxLoop (allBoards : Board list) = async {
         let! board = inbox.Receive()
         match allBoards.Length with
@@ -131,6 +146,7 @@ type BoardSolver (start : int) =
             | _ -> ignore 0
         getBestHelper first; !best
 
+// Represents a thread that solves a board given a starting point.
 let makeSolverTask i = async {
     boardAgent.Post (BoardSolver(i)).GetBest
 }
@@ -152,7 +168,13 @@ let getBoardSize args =
 let main(args) =
     let n = getBoardSize args
     match n with
-    // Given an invalid board size, print usage and exit
+    (*
+     * Given an invalid board size, print usage and exit.
+     * Otherwise, solve all boards from all starting points in parallel.
+     * After we initialize all threads, then spin until we are allowed to exit.
+     * If we didn't spin until canExit is true, then we would exit before
+     * a single thread complete its work.
+     *)
     | s when s < 5 -> printfn "Usage: mono Game.exe -s [board size]"; exit -1
     | _ -> resetSize n
            List.map (fun i -> makeSolverTask i) [0 .. numHoles - 1]
@@ -160,5 +182,5 @@ let main(args) =
            |> Async.RunSynchronously
            |> ignore
            while not !canExit do
-               ()
+               ()   // Really bad hack to just spin until we can quit
     0
