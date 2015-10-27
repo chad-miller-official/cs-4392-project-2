@@ -43,14 +43,6 @@ func NewMove(start, end int) *Move {
     return retval
 }
 
-func (m Move) Clone() *Move {
-    retval := new(Move)
-    retval.Start = m.Start
-    retval.End = m.End
-    retval.Middle = m.Middle
-    return retval
-}
-
 type Board struct {
     Holes []bool
     Moves, History []*Move
@@ -153,31 +145,10 @@ func (b Board) ExecuteMove(m *Move) *Board {
     retval.History = make([]*Move, len(b.History) + 1)
     
     for i, _ := range b.History {
-        retval.History[i] = b.History[i].Clone()
+        retval.History[i] = b.History[i]
     }
     
-    retval.History[len(b.History)] = m.Clone()
-    
-    return retval
-}
-
-func (b Board) Clone() *Board {
-    retval := new(Board)
-    
-    retval.Holes = make([]bool, len(b.Holes))
-    copy(retval.Holes, b.Holes)
-    
-    retval.Moves = make([]*Move, len(b.Moves))
-    
-    for i, _ := range b.Moves {
-        retval.Moves[i] = b.Moves[i].Clone()
-    }
-    
-    retval.History = make([]*Move, len(b.History))
-    
-    for i, _ := range b.History {
-        retval.History[i] = b.History[i].Clone()
-    }
+    retval.History[len(b.History)] = m
     
     return retval
 }

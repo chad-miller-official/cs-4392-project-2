@@ -35,7 +35,7 @@ func (bs BoardSolver) solveBoardHelper(b *Board) {
                 bs.solveBoardHelper(b.ExecuteMove(m))
             }
         } else {
-            *bs.Best = *b.Clone()
+            *bs.Best = *b
         }
     }
 }
@@ -80,7 +80,7 @@ func main() {
         solver.SolveBoard()
         
         if solver.Best.NumPegs() > allBest.NumPegs() {
-            allBest = solver.Best.Clone()
+            allBest = solver.Best
         }
     }
     
