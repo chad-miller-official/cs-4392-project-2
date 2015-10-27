@@ -8,9 +8,9 @@ import (
 
 var Size, NumHoles int
 var Neighbors [][]int
-var best Board
+var best *Board
 
-func solveBoard(b Board) {
+func solveBoard(b *Board) {
     if b.NumPegs() > best.NumPegs() {
         if len(b.Moves) > 0 {
             for _, m := range b.Moves {
@@ -51,10 +51,10 @@ func main() {
         startHoles[i] = i
     }
     
-    best = ConstructBoard(startHoles, []Move{})
+    best = NewBoard(startHoles)
     
     for i, _ := range startHoles {
-        solveBoard(ConstructBoard([]int{i}, []Move{}))
+        solveBoard(NewBoard([]int{i}))
     }
     
     fmt.Println((best.History[0].End + 1), ",", len(best.History))

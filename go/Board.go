@@ -35,19 +35,25 @@ func (m Move) getMiddle() int {
     return retval
 }
 
-func ConstructMove(start, end int) Move {
-    retval := Move{start, end, 0}
+func NewMove(start, end int) *Move {
+    retval := new(Move)
+    retval.Start = start
+    retval.End = end
     retval.Middle = retval.getMiddle()
     return retval
 }
 
-func (m Move) Clone() Move {
-    return Move{m.Start, m.End, m.Middle}
+func (m Move) Clone() *Move {
+    retval := new(Move)
+    retval.Start = m.Start
+    retval.End = m.End
+    retval.Middle = m.Middle
+    return retval
 }
 
 type Board struct {
     Holes []bool
-    Moves, History []Move
+    Moves, History []*Move
 }
 
 func (b Board) getNeighborSafe(x1, y1, x2, y2 int) int {
@@ -94,13 +100,13 @@ func (b Board) getTwoAwayNeighbors(center int) []int {
     return retval
 }
 
-func (b Board) getMoves() []Move {
-    var retval []Move
+func (b Board) getMoves() []*Move {
+    var retval []*Move
     
     for i := 0; i < len(b.Holes); i++ {
         if b.Holes[i] {
             for _, j := range b.getTwoAwayNeighbors(i) {
-                retval = append(retval, ConstructMove(j, i))
+                retval = append(retval, NewMove(j, i))
             }
         }
     }
@@ -108,16 +114,16 @@ func (b Board) getMoves() []Move {
     return retval
 }
 
-func ConstructBoard(holes []int, history []Move) Board {
-    makeHoles := make([]bool, NumHoles)
+func NewBoard(holes []int) *Board {
+    retval := new(Board)
+    retval.Holes = make([]bool, NumHoles)
     
     for _, i := range holes {
-        makeHoles[i] = true
+        retval.Holes[i] = true
     }
     
-    retval := Board{makeHoles, []Move{}, history}
     retval.Moves = retval.getMoves()
-    
+    retval.History = make([]*Move, 0)
     return retval
 }
 
@@ -133,52 +139,46 @@ func (b Board) NumPegs() int {
     return sum
 }
 
-func (b Board) ExecuteMove(m Move) Board {
-    nextHolesSet := make(map[int]bool)
+func (b Board) ExecuteMove(m *Move) *Board {
+    retval := new(Board)
     
-    for i := 0; i < len(b.Holes); i++ {
-        if b.Holes[i] {
-            nextHolesSet[i] = true
-        }
-    }
+    retval.Holes = make([]bool, len(b.Holes))
+    copy(retval.Holes, b.Holes)
+    retval.Holes[m.Start] = true
+    retval.Holes[m.Middle] = true
+    retval.Holes[m.End] = false
     
-    nextHolesSet[m.Start] = true
-    nextHolesSet[m.Middle] = true
-    delete(nextHolesSet, m.End)
+    retval.Moves = retval.getMoves()
     
-    var nextHoles []int
-    
-    for k, v := range nextHolesSet {
-        if v {
-            nextHoles = append(nextHoles, k)
-        }
-    }
-    
-    nextHistory := b.History
-    nextHistory = append(nextHistory, m)
-    
-    return ConstructBoard(nextHoles, nextHistory)
-}
-
-func (b Board) Clone() Board {
-    nextHoles := make([]bool, NumHoles)
-    
-    for i, _ := range b.Holes{
-        nextHoles[i] = b.Holes[i]
-    }
-    
-    nextMoves := make([]Move, len(b.Moves))
-    
-    for i, _ := range b.Moves {
-        nextMoves[i] = b.Moves[i].Clone()
-    }
-    
-    nextHistory := make([]Move, len(b.History))
+    retval.History = make([]*Move, len(b.History) + 1)
     
     for i, _ := range b.History {
-        nextHistory[i] = b.History[i].Clone()
+        retval.History[i] = b.History[i].Clone()
     }
     
-    return Board{nextHoles, nextMoves, nextHistory}
+    retval.History[len(b.History)] = m.Clone()
+    
+    return retval
+}
+
+func (b Board) Clone() *Board {
+    retval := new(Board)
+    
+    retval.Holes = make([]bool, len(b.Holes))
+    copy(retval.Holes, b.Holes)
+    
+    retval.Moves = make([]*Move, len(b.Moves))
+    
+    for i, _ := range b.Moves {
+        retval.Moves[i] = b.Moves[i].Clone()
+    }
+    
+    retval.History = make([]*Move, len(b.History))
+    
+    for i, _ := range b.History {
+        retval.History[i] = b.History[i].Clone()
+    }
+    
+    return retval
 }
 
