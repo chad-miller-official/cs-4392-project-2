@@ -8,18 +8,40 @@ import (
 
 var Size, NumHoles int
 var Neighbors [][]int
-var best *Board
+var allBest *Board
 
-func solveBoard(b *Board) {
-    if b.NumPegs() > best.NumPegs() {
+type BoardSolver struct {
+    first, Best *Board
+}
+
+func NewBoardSolver(start int) *BoardSolver {
+    retval := new(BoardSolver)
+    retval.first = NewBoard([]int{start})
+    
+    startHoles := make([]int, NumHoles)
+    
+    for i, _ := range startHoles {
+        startHoles[i] = i
+    }
+    
+    retval.Best = NewBoard(startHoles)
+    return retval
+}
+
+func (bs BoardSolver) solveBoardHelper(b *Board) {
+    if b.NumPegs() > bs.Best.NumPegs() {
         if len(b.Moves) > 0 {
             for _, m := range b.Moves {
-                solveBoard(b.ExecuteMove(m))
+                bs.solveBoardHelper(b.ExecuteMove(m))
             }
         } else {
-            best = b.Clone()
+            *bs.Best = *b.Clone()
         }
     }
+}
+
+func (bs BoardSolver) SolveBoard() {
+    bs.solveBoardHelper(bs.first)
 }
 
 func main() {
@@ -51,15 +73,20 @@ func main() {
         startHoles[i] = i
     }
     
-    best = NewBoard(startHoles)
+    allBest = NewBoard(startHoles)
     
     for i, _ := range startHoles {
-        solveBoard(NewBoard([]int{i}))
+        solver := NewBoardSolver(i)
+        solver.SolveBoard()
+        
+        if solver.Best.NumPegs() > allBest.NumPegs() {
+            allBest = solver.Best.Clone()
+        }
     }
     
-    fmt.Println((best.History[0].End + 1), ",", len(best.History))
+    fmt.Println((allBest.History[0].End + 1), ",", len(allBest.History))
     
-    for _, m := range best.History {
+    for _, m := range allBest.History {
         fmt.Println((m.Start + 1), ",", (m.End + 1))
     }
 }
