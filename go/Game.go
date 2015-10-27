@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "os"
+    "runtime"
     "strconv"
 )
 
@@ -45,6 +46,8 @@ func (bs BoardSolver) SolveBoard() {
 }
 
 func main() {
+    runtime.GOMAXPROCS(runtime.NumCPU())
+    
 	args := os.Args[1:]
 	
 	if len(args) != 2 || args[0] != "-s" {
@@ -75,19 +78,30 @@ func main() {
     
     allBest = NewBoard(startHoles)
     
+    channels := make([]chan *Board, NumHoles)
+    
     for i, _ := range startHoles {
-        solver := NewBoardSolver(i)
-        solver.SolveBoard()
+        channels[i] = make(chan *Board)
         
-        if solver.Best.NumPegs() > allBest.NumPegs() {
-            allBest = solver.Best
+        go func (channel chan *Board, start int) {
+            solver := NewBoardSolver(start)
+            solver.SolveBoard()
+            channel <- solver.Best
+        }(channels[i], i)
+    }
+    
+    for i, _ := range startHoles {
+        best := <-channels[i]
+        
+        if best.NumPegs() > allBest.NumPegs() {
+            allBest = best
         }
     }
     
-    fmt.Println((allBest.History[0].End + 1), ",", len(allBest.History))
+    fmt.Printf("%d, %d\n", (allBest.History[0].End + 1), len(allBest.History))
     
     for _, m := range allBest.History {
-        fmt.Println((m.Start + 1), ",", (m.End + 1))
+        fmt.Printf("%d, %d\n", (m.Start + 1), (m.End + 1))
     }
 }
 
